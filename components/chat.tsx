@@ -3,12 +3,14 @@
 import { useChat } from "@ai-sdk/react";
 import { useRouter } from "next/navigation";
 import { ModelSelector } from "@/components/model-selector";
+import { MessageMeta } from "@/components/message-meta";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SendIcon, PlusIcon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { DEFAULT_MODEL, SUGGESTED_PROMPTS } from "@/lib/constants";
+import { messageMetadataSchema, type MessageMetadata } from "@/lib/message-metadata";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,7 +45,9 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
     setCurrentModelId(newModelId);
   };
 
-  const { messages, error, sendMessage, regenerate, setMessages, stop, status } = useChat();
+  const { messages, error, sendMessage, regenerate, setMessages, stop, status } = useChat({
+    messageMetadataSchema,
+  });
 
   const hasMessages = messages.length > 0;
 
@@ -54,6 +58,10 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleSend = (text: string) => {
+    sendMessage({ text }, { body: { modelId: currentModelId } });
+  };
 
   const handleNewChat = () => {
     stop();
@@ -86,9 +94,7 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
               {SUGGESTED_PROMPTS.map((suggestion) => (
                 <button
                   key={suggestion}
-                  onClick={() => {
-                    sendMessage({ text: suggestion }, { body: { modelId: currentModelId } });
-                  }}
+                  onClick={() => handleSend(suggestion)}
                   className="text-sm px-3 py-1.5 rounded-full glass-effect shadow-border-small hover:shadow-border-medium transition-all duration-150 text-muted-foreground hover:text-foreground"
                 >
                   {suggestion}
@@ -99,7 +105,7 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  sendMessage({ text: input }, { body: { modelId: currentModelId } });
+                  handleSend(input);
                   setInput("");
                 }}
               >
@@ -118,10 +124,7 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
                       className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base placeholder:text-muted-foreground/60"
                       onKeyDown={(e) => {
                         if (e.metaKey && e.key === "Enter") {
-                          sendMessage(
-                            { text: input },
-                            { body: { modelId: currentModelId } },
-                          );
+                          handleSend(input);
                           setInput("");
                         }
                       }}
@@ -147,29 +150,45 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
         <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full animate-fade-in overflow-hidden">
           <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 hide-scrollbar">
             <div className="flex flex-col gap-4 md:gap-6 pb-4">
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={cn(
-                    m.role === "user" &&
-                      "bg-foreground text-background rounded-2xl p-3 md:p-4 ml-auto max-w-[90%] md:max-w-[75%] shadow-border-small font-medium text-sm md:text-base",
-                    m.role === "assistant" && "max-w-[95%] md:max-w-[85%] text-foreground/90 leading-relaxed text-sm md:text-base"
-                  )}
-                >
-                  {m.parts.map((part, i) => {
-                    switch (part.type) {
-                      case "text":
-                        return m.role === "assistant" ? (
-                          <Streamdown key={`${m.id}-${i}`} isAnimating={status === "streaming" && m.id === messages[messages.length - 1]?.id}>
-                            {part.text}
-                          </Streamdown>
-                        ) : (
-                          <div key={`${m.id}-${i}`}>{part.text}</div>
-                        );
-                    }
-                  })}
+              {messages.map((m) => {
+                const meta = m.role === "assistant"
+                  ? (m.metadata as MessageMetadata | undefined)
+                  : undefined;
+
+                return (
+                  <div key={m.id}>
+                    <div
+                      className={cn(
+                        m.role === "user" &&
+                          "bg-foreground text-background rounded-2xl p-3 md:p-4 ml-auto max-w-[90%] md:max-w-[75%] shadow-border-small font-medium text-sm md:text-base",
+                        m.role === "assistant" && "max-w-[95%] md:max-w-[85%] text-foreground/90 leading-relaxed text-sm md:text-base",
+                      )}
+                    >
+                      {m.parts.map((part, i) => {
+                        switch (part.type) {
+                          case "text":
+                            return m.role === "assistant" ? (
+                              <Streamdown key={`${m.id}-${i}`} isAnimating={status === "streaming" && m.id === messages[messages.length - 1]?.id}>
+                                {part.text}
+                              </Streamdown>
+                            ) : (
+                              <div key={`${m.id}-${i}`}>{part.text}</div>
+                            );
+                        }
+                      })}
+                    </div>
+                    {meta && <MessageMeta metadata={meta} />}
+                  </div>
+                );
+              })}
+
+              {status === "submitted" && (
+                <div className="flex items-center gap-1.5 py-2 animate-fade-in">
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-pulse" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-pulse" style={{ animationDelay: "150ms" }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-pulse" style={{ animationDelay: "300ms" }} />
                 </div>
-              ))}
+              )}
 
               <div ref={messagesEndRef} />
             </div>
@@ -203,7 +222,7 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              sendMessage({ text: input }, { body: { modelId: currentModelId } });
+              handleSend(input);
               setInput("");
             }}
             className="px-4 md:px-8 pb-6 md:pb-8"
@@ -222,10 +241,7 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
                   className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base placeholder:text-muted-foreground/60 font-medium"
                   onKeyDown={(e) => {
                     if (e.metaKey && e.key === "Enter") {
-                      sendMessage(
-                        { text: input },
-                        { body: { modelId: currentModelId } },
-                      );
+                      handleSend(input);
                       setInput("");
                     }
                   }}
