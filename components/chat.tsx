@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SendIcon, PlusIcon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { DEFAULT_MODEL } from "@/lib/constants";
+import { DEFAULT_MODEL, SUGGESTED_PROMPTS } from "@/lib/constants";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -82,6 +82,19 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
                 AI GATEWAY
               </span>
             </h1>
+            <div className="flex flex-wrap justify-center gap-2 animate-fade-in" style={{ animationDelay: '150ms' }}>
+              {SUGGESTED_PROMPTS.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => {
+                    sendMessage({ text: suggestion }, { body: { modelId: currentModelId } });
+                  }}
+                  className="text-sm px-3 py-1.5 rounded-full glass-effect shadow-border-small hover:shadow-border-medium transition-all duration-150 text-muted-foreground hover:text-foreground"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
             <div className="w-full animate-slide-up" style={{ animationDelay: '100ms' }}>
               <form
                 onSubmit={(e) => {

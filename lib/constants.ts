@@ -1,5 +1,12 @@
 export const DEFAULT_MODEL = "openai/gpt-5-nano";
 
+export const SUGGESTED_PROMPTS = [
+  "What can AI Gateway do for my app?",
+  "Compare model pricing",
+  "How do I reduce latency?",
+  "What's the cheapest model for summarization?",
+];
+
 export const SUPPORTED_MODELS = [
   "amazon/nova-lite",
   "amazon/nova-micro",
