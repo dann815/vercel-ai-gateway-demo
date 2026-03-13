@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { MetricsProvider } from "@/lib/metrics/metrics-context";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,7 +35,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <MetricsProvider>{children}</MetricsProvider>
         </ThemeProvider>
       </body>
     </html>

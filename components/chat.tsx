@@ -7,10 +7,12 @@ import { MessageMeta } from "@/components/message-meta";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Leaderboard } from "@/components/leaderboard";
 import { SendIcon, PlusIcon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { DEFAULT_MODEL, SUGGESTED_PROMPTS } from "@/lib/constants";
 import { messageMetadataSchema, type MessageMetadata } from "@/lib/message-metadata";
+import { useMetrics } from "@/lib/metrics/metrics-context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -49,7 +51,9 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
     messageMetadataSchema,
   });
 
+  const { addRecord } = useMetrics();
   const hasMessages = messages.length > 0;
+  const trackedIdsRef = useRef<Set<string>>(new Set());
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -58,6 +62,24 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Persist metrics when an assistant message finishes streaming
+  useEffect(() => {
+    if (status !== "ready") return;
+    for (const m of messages) {
+      if (m.role !== "assistant") continue;
+      if (trackedIdsRef.current.has(m.id)) continue;
+      const meta = m.metadata as MessageMetadata | undefined;
+      if (!meta?.modelId) continue;
+      trackedIdsRef.current.add(m.id);
+      addRecord({
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        ...meta,
+        modelId: meta.modelId,
+      });
+    }
+  }, [status, messages, addRecord]);
 
   const handleSend = (text: string) => {
     sendMessage({ text }, { body: { modelId: currentModelId } });
@@ -81,6 +103,7 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
           <PlusIcon className="h-4 w-4" />
         </Button>
         <ThemeToggle />
+        <Leaderboard />
       </div>
       {!hasMessages && (
         <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-8 animate-fade-in">
