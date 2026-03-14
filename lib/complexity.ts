@@ -1,4 +1,4 @@
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import type { LanguageModel } from "ai";
 
@@ -13,13 +13,20 @@ export async function classifyComplexity(
   model: LanguageModel,
   userMessage: string,
 ): Promise<ComplexityRating> {
-  const { object } = await generateObject({
+  const { text } = await generateText({
     model,
-    schema: complexitySchema,
-    prompt: `Classify the complexity of this user message for an AI assistant. Consider factors like: number of sub-tasks, domain expertise required, reasoning depth needed.
+    prompt: `Classify the complexity of the following user message for an AI assistant.
 
-Message: "${userMessage}"`,
+Respond with ONLY a JSON object (no markdown, no code fences) in this exact format:
+{"rating": "simple", "justification": "reason here"}
+
+The rating must be one of: "simple", "moderate", "complex".
+Consider factors like: number of sub-tasks, domain expertise required, reasoning depth needed.
+
+User message: "${userMessage}"`,
   });
 
-  return object;
+  const cleaned = text.replace(/```(?:json)?\s*/g, "").replace(/```\s*/g, "").trim();
+  const parsed = JSON.parse(cleaned);
+  return complexitySchema.parse(parsed);
 }
