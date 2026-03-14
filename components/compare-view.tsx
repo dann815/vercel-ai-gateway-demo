@@ -16,6 +16,7 @@ import {
   FlaskConical,
   Check,
   Square,
+  GitGraph,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -151,6 +152,16 @@ export function CompareView() {
         </Button>
         <ThemeToggle />
         <Leaderboard />
+        <Button
+          asChild
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 shadow-border-small hover:shadow-border-medium bg-background/80 backdrop-blur-sm border-0 hover:bg-background hover:scale-[1.02] transition-all duration-150 ease"
+        >
+          <Link href="/architecture">
+            <GitGraph className="h-4 w-4" />
+          </Link>
+        </Button>
       </div>
 
       {/* Evaluation status indicator */}
