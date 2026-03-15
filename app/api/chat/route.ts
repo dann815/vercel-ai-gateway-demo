@@ -3,6 +3,7 @@ import { DEFAULT_MODEL, SUPPORTED_MODELS } from "@/lib/constants";
 import { gateway } from "@/lib/gateway";
 import { classifyComplexity } from "@/lib/complexity";
 import { calculateCost } from "@/lib/model-pricing";
+import { containsProfanity } from "@/lib/profanity";
 import type { MessageMetadata } from "@/lib/message-metadata";
 
 export const maxDuration = 60;
@@ -13,6 +14,7 @@ export async function POST(req: Request) {
     modelId = DEFAULT_MODEL,
   }: { messages: UIMessage[]; modelId: string } = await req.json();
 
+  // Only accept supported models
   if (!SUPPORTED_MODELS.includes(modelId)) {
     return new Response(
       JSON.stringify({ error: `Model ${modelId} is not supported` }),
@@ -26,6 +28,13 @@ export async function POST(req: Request) {
       ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
       .map((p) => p.text)
       .join(" ") ?? "";
+
+  if (containsProfanity(userText)) {
+    return new Response(
+      JSON.stringify({ error: "Message contains inappropriate language." }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
 
   let complexity: MessageMetadata["complexity"];
   let justification: MessageMetadata["justification"];

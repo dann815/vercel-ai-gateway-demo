@@ -9,6 +9,7 @@ flowchart TB
   subgraph API["POST /api/chat"]
     direction TB
     Validate["Validate modelId\\nagainst SUPPORTED_MODELS"]
+    Profanity["Profanity filter\\n<i>regex word-boundary check</i>"]
 
     subgraph Classification["Complexity Classification"]
       direction LR
@@ -41,7 +42,9 @@ flowchart TB
   Leaderboard["Leaderboard aggregation"]
 
   User --> API
-  Validate --> Classification
+  Validate --> Profanity
+  Profanity -->|pass| Classification
+  Profanity -->|"fail (400)"| User
   ClassifyCall --> ClassifyResult
   Classification --> Stream
   SystemPrompt --> Chunks --> TTFT
@@ -69,8 +72,9 @@ export default function ChatArchitecturePage() {
       description={
         <>
           <p>
-            The user selects a model and sends a message. The server classifies
-            complexity, then streams the response via{" "}
+            The user selects a model and sends a message. The server runs a
+            profanity filter, classifies complexity, then streams the response
+            via{" "}
             <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">
               streamText()
             </code>{" "}
