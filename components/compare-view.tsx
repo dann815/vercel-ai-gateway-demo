@@ -372,6 +372,8 @@ export function CompareView() {
           <CompareTable
             modelIds={activeModelsRef.current}
             completedMetadata={completedMetadata}
+            llamaEvals={llamaEvals}
+            geminiEvals={geminiEvals}
           />
 
           {/* Bottom input for follow-up */}
