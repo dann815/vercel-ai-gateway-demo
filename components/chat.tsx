@@ -41,6 +41,7 @@ function ModelSelectorHandler({
 export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
   const [input, setInput] = useState("");
   const [currentModelId, setCurrentModelId] = useState(modelId);
+  const [errorDismissed, setErrorDismissed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleModelIdChange = (newModelId: string) => {
@@ -58,6 +59,10 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  useEffect(() => {
+    if (error) setErrorDismissed(false);
+  }, [error]);
 
   useEffect(() => {
     scrollToBottom();
@@ -239,7 +244,7 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
         </div>
       )}
 
-      {error && (
+      {error && !errorDismissed && (
         <div className="max-w-4xl mx-auto w-full px-4 md:px-8 pb-4 animate-slide-down">
           <Alert variant="destructive" className="flex flex-col items-end">
             <div className="flex flex-row gap-2">
@@ -252,9 +257,9 @@ export function Chat({ modelId = DEFAULT_MODEL }: { modelId: string }) {
               variant="outline"
               size="sm"
               className="ml-auto transition-all duration-150 ease-out hover:scale-105"
-              onClick={() => regenerate()}
+              onClick={() => setErrorDismissed(true)}
             >
-              Retry
+              Dismiss
             </Button>
           </Alert>
         </div>
