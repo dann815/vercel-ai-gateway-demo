@@ -36,7 +36,10 @@ export function CompareView() {
   const [input, setInput] = useState("");
   const [activePrompt, setActivePrompt] = useState<string | null>(null);
   const [roundId, setRoundId] = useState(0);
-  const [evaluations, setEvaluations] = useState<
+  const [llamaEvals, setLlamaEvals] = useState<
+    Record<string, EvaluationResult>
+  >({});
+  const [geminiEvals, setGeminiEvals] = useState<
     Record<string, EvaluationResult>
   >({});
   const [evalStatus, setEvalStatus] = useState<
@@ -82,11 +85,21 @@ export function CompareView() {
         });
         if (!res.ok) throw new Error("Evaluation failed");
         const data = await res.json();
-        const evMap: Record<string, EvaluationResult> = {};
-        for (const ev of data.evaluations) {
-          evMap[ev.modelId] = ev;
+
+        if (data.llama?.evaluations) {
+          const evMap: Record<string, EvaluationResult> = {};
+          for (const ev of data.llama.evaluations) {
+            evMap[ev.modelId] = ev;
+          }
+          setLlamaEvals(evMap);
         }
-        setEvaluations(evMap);
+        if (data.gemini?.evaluations) {
+          const evMap: Record<string, EvaluationResult> = {};
+          for (const ev of data.gemini.evaluations) {
+            evMap[ev.modelId] = ev;
+          }
+          setGeminiEvals(evMap);
+        }
         setEvalStatus("complete");
       } catch (e) {
         console.error("Evaluation error:", e);
@@ -139,7 +152,8 @@ export function CompareView() {
     statusesRef.current.clear();
     completedRef.current.clear();
     activeModelsRef.current = modelIds;
-    setEvaluations({});
+    setLlamaEvals({});
+    setGeminiEvals({});
     setEvalStatus("idle");
     setCompletedMetadata({});
     setActivePrompt(text);
@@ -347,7 +361,8 @@ export function CompareView() {
                   onStatusChange={handleStatusChange}
                   onComplete={handleComplete}
                   onMetadataUpdate={handleMetadataUpdate}
-                  evaluation={evaluations[id]}
+                  llamaEval={llamaEvals[id]}
+                  geminiEval={geminiEvals[id]}
                 />
               ))}
             </div>

@@ -81,7 +81,8 @@ export function ModelColumn({
   onStatusChange,
   onComplete,
   onMetadataUpdate,
-  evaluation,
+  llamaEval,
+  geminiEval,
 }: {
   modelId: string;
   prompt: string;
@@ -92,7 +93,8 @@ export function ModelColumn({
     metadata: MessageMetadata
   ) => void;
   onMetadataUpdate?: (modelId: string, metadata: MessageMetadata) => void;
-  evaluation?: EvaluationResult;
+  llamaEval?: EvaluationResult;
+  geminiEval?: EvaluationResult;
 }) {
   const { messages, status, error, sendMessage } = useChat({
     messageMetadataSchema,
@@ -289,7 +291,7 @@ export function ModelColumn({
       )}
 
       {/* Evaluation & classification justification — behind dropdown */}
-      {(evaluation || meta?.justification) && (
+      {(llamaEval || geminiEval || meta?.justification) && (
         <div className="px-4 py-2 border-t border-border/50 space-y-1.5">
           <button
             onClick={() => setMetaExpanded((v) => !v)}
@@ -320,24 +322,33 @@ export function ModelColumn({
                   </p>
                 </div>
               )}
-              {evaluation && (
+              {llamaEval && (
                 <div className="space-y-1.5">
                   <div className="text-[11px] font-medium text-muted-foreground">
-                    Response Quality
+                    Llama 3.1 8B Eval
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    <ScorePill label="Verbosity" score={evaluation.verbosity} />
-                    <ScorePill
-                      label="Reading"
-                      score={evaluation.readingLevel}
-                    />
-                    <ScorePill
-                      label="Correctness"
-                      score={evaluation.correctness}
-                    />
+                    <ScorePill label="Verbosity" score={llamaEval.verbosity} />
+                    <ScorePill label="Reading" score={llamaEval.readingLevel} />
+                    <ScorePill label="Correctness" score={llamaEval.correctness} />
                   </div>
                   <p className="text-[11px] text-muted-foreground/70 italic leading-snug">
-                    {evaluation.commentary}
+                    {llamaEval.commentary}
+                  </p>
+                </div>
+              )}
+              {geminiEval && (
+                <div className="space-y-1.5">
+                  <div className="text-[11px] font-medium text-muted-foreground">
+                    Gemini Flash Eval
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <ScorePill label="Verbosity" score={geminiEval.verbosity} />
+                    <ScorePill label="Reading" score={geminiEval.readingLevel} />
+                    <ScorePill label="Correctness" score={geminiEval.correctness} />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/70 italic leading-snug">
+                    {geminiEval.commentary}
                   </p>
                 </div>
               )}
