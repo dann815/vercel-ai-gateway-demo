@@ -80,6 +80,7 @@ export function ModelColumn({
   prompt,
   onStatusChange,
   onComplete,
+  onMetadataUpdate,
   evaluation,
 }: {
   modelId: string;
@@ -90,6 +91,7 @@ export function ModelColumn({
     text: string,
     metadata: MessageMetadata
   ) => void;
+  onMetadataUpdate?: (modelId: string, metadata: MessageMetadata) => void;
   evaluation?: EvaluationResult;
 }) {
   const { messages, status, error, sendMessage } = useChat({
@@ -109,19 +111,34 @@ export function ModelColumn({
     }
   }, [prompt, modelId, sendMessage]);
 
+  const assistantMsg = messages.find((m) => m.role === "assistant");
+  const meta = assistantMsg
+    ? (assistantMsg.metadata as MessageMetadata | undefined)
+    : undefined;
+
   // Report status changes
   useEffect(() => {
     onStatusChange(modelId, status);
   }, [modelId, status, onStatusChange]);
 
+  // Stream partial metadata upward as it arrives
+  const lastMetaRef = useRef<string>("");
+  useEffect(() => {
+    if (!meta || !onMetadataUpdate) return;
+    const snapshot = JSON.stringify(meta);
+    if (snapshot !== lastMetaRef.current) {
+      lastMetaRef.current = snapshot;
+      onMetadataUpdate(modelId, meta);
+    }
+  }, [meta, modelId, onMetadataUpdate]);
+
   // When complete, report text + metadata and track metrics
   useEffect(() => {
     if (status !== "ready" || trackedRef.current) return;
-    const assistantMsg = messages.find((m) => m.role === "assistant");
     if (!assistantMsg) return;
 
     trackedRef.current = true;
-    const meta = (assistantMsg.metadata as MessageMetadata) ?? {};
+    const completeMeta = (assistantMsg.metadata as MessageMetadata) ?? {};
     const text = assistantMsg.parts
       ?.filter(
         (p): p is { type: "text"; text: string } => p.type === "text"
@@ -129,22 +146,17 @@ export function ModelColumn({
       .map((p) => p.text)
       .join("") ?? "";
 
-    onComplete(modelId, text, meta);
+    onComplete(modelId, text, completeMeta);
 
-    if (meta.modelId) {
+    if (completeMeta.modelId) {
       addRecord({
         id: crypto.randomUUID(),
         timestamp: Date.now(),
-        ...meta,
-        modelId: meta.modelId,
+        ...completeMeta,
+        modelId: completeMeta.modelId,
       });
     }
   }, [status, messages, modelId, onComplete, addRecord]);
-
-  const assistantMsg = messages.find((m) => m.role === "assistant");
-  const meta = assistantMsg
-    ? (assistantMsg.metadata as MessageMetadata | undefined)
-    : undefined;
   const isStreaming = status === "streaming";
   const isSubmitted = status === "submitted";
   const isDone = status === "ready" && assistantMsg;

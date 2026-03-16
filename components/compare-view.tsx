@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { useAvailableModels } from "@/lib/hooks/use-available-models";
 import { SUGGESTED_PROMPTS } from "@/lib/constants";
 import { ModelColumn, type EvaluationResult } from "@/components/model-column";
+import { CompareTable } from "@/components/compare-table";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Leaderboard } from "@/components/leaderboard";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,10 @@ export function CompareView() {
   const [evalStatus, setEvalStatus] = useState<
     "idle" | "running" | "complete" | "error"
   >("idle");
+
+  const [completedMetadata, setCompletedMetadata] = useState<
+    Record<string, MessageMetadata>
+  >({});
 
   const statusesRef = useRef<Map<string, string>>(new Map());
   const completedRef = useRef<Map<string, CompletedResponse>>(new Map());
@@ -98,6 +103,13 @@ export function CompareView() {
     []
   );
 
+  const handleMetadataUpdate = useCallback(
+    (modelId: string, metadata: MessageMetadata) => {
+      setCompletedMetadata((prev) => ({ ...prev, [modelId]: metadata }));
+    },
+    []
+  );
+
   const handleComplete = useCallback(
     (modelId: string, text: string, metadata: MessageMetadata) => {
       completedRef.current.set(modelId, { modelId, text, metadata });
@@ -129,6 +141,7 @@ export function CompareView() {
     activeModelsRef.current = modelIds;
     setEvaluations({});
     setEvalStatus("idle");
+    setCompletedMetadata({});
     setActivePrompt(text);
     setRoundId((r) => r + 1);
     setInput("");
@@ -333,11 +346,18 @@ export function CompareView() {
                   prompt={activePrompt}
                   onStatusChange={handleStatusChange}
                   onComplete={handleComplete}
+                  onMetadataUpdate={handleMetadataUpdate}
                   evaluation={evaluations[id]}
                 />
               ))}
             </div>
           </div>
+
+          {/* Summary table */}
+          <CompareTable
+            modelIds={activeModelsRef.current}
+            completedMetadata={completedMetadata}
+          />
 
           {/* Bottom input for follow-up */}
           <div className="w-full max-w-4xl mx-auto">
