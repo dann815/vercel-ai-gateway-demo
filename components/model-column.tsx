@@ -223,10 +223,32 @@ export function ModelColumn({
         )}
       </div>
 
-      {/* Metadata footer */}
-      {meta && isDone && (
+      {/* Metadata footer — pinned at bottom, populates as data arrives */}
+      {meta && (
         <div className="px-4 py-2 border-t border-border/50 space-y-1.5">
           <div className="flex flex-wrap items-center gap-1.5">
+            {meta.classificationMs != null && (
+              <MetaPill>
+                {(meta.classificationMs / 1000).toFixed(1)}s classify
+              </MetaPill>
+            )}
+            {meta.complexity && (
+              <MetaPill
+                className={cn(
+                  meta.complexity === "simple" &&
+                    "bg-green-500/15 text-green-700 dark:text-green-400",
+                  meta.complexity === "moderate" &&
+                    "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400",
+                  meta.complexity === "complex" &&
+                    "bg-red-500/15 text-red-700 dark:text-red-400"
+                )}
+              >
+                {meta.complexity}
+              </MetaPill>
+            )}
+            {meta.ttftMs != null && (
+              <MetaPill>{meta.ttftMs}ms TTFT</MetaPill>
+            )}
             {meta.streamingMs != null && (
               <MetaPill>
                 {(meta.streamingMs / 1000).toFixed(1)}s stream
@@ -245,74 +267,70 @@ export function ModelColumn({
                   : `$${meta.estimatedCost.toFixed(4)}`}
               </MetaPill>
             )}
-            {meta.complexity && (
-              <MetaPill
-                className={cn(
-                  meta.complexity === "simple" &&
-                    "bg-green-500/15 text-green-700 dark:text-green-400",
-                  meta.complexity === "moderate" &&
-                    "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400",
-                  meta.complexity === "complex" &&
-                    "bg-red-500/15 text-red-700 dark:text-red-400"
-                )}
-              >
-                {meta.complexity}
+            {meta.inputTokens != null && (
+              <MetaPill>
+                {meta.inputTokens}↑ {meta.outputTokens ?? 0}↓
               </MetaPill>
             )}
-            <button
-              onClick={() => setMetaExpanded((v) => !v)}
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/40 transition-colors"
-            >
-              <ChevronDown
-                className={cn(
-                  "h-3 w-3 transition-transform duration-150",
-                  metaExpanded && "rotate-180"
-                )}
-              />
-            </button>
           </div>
-          {metaExpanded && (
-            <div className="flex flex-wrap items-center gap-1.5 animate-fade-in">
-              {meta.inputTokens != null && (
-                <MetaPill>
-                  {meta.inputTokens}↑ {meta.outputTokens ?? 0}↓
-                </MetaPill>
-              )}
-              {meta.classificationMs != null && (
-                <MetaPill>
-                  {(meta.classificationMs / 1000).toFixed(1)}s classify
-                </MetaPill>
-              )}
-              {meta.justification && (
-                <span className="text-[11px] text-muted-foreground/50 italic">
-                  {meta.justification}
-                </span>
-              )}
-            </div>
-          )}
         </div>
       )}
 
-      {/* Evaluation results */}
-      {evaluation && (
-        <div className="px-4 py-3 border-t border-border/50 space-y-2 animate-fade-in">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+      {/* Evaluation & classification justification — behind dropdown */}
+      {(evaluation || meta?.justification) && (
+        <div className="px-4 py-2 border-t border-border/50 space-y-1.5">
+          <button
+            onClick={() => setMetaExpanded((v) => !v)}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide cursor-pointer transition-all duration-150",
+              metaExpanded
+                ? "bg-foreground text-background"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted"
+            )}
+          >
             Evaluation
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            <ScorePill label="Verbosity" score={evaluation.verbosity} />
-            <ScorePill
-              label="Reading"
-              score={evaluation.readingLevel}
+            <ChevronDown
+              className={cn(
+                "h-3 w-3 transition-transform duration-150",
+                metaExpanded && "rotate-180"
+              )}
             />
-            <ScorePill
-              label="Correctness"
-              score={evaluation.correctness}
-            />
-          </div>
-          <p className="text-[11px] text-muted-foreground/70 italic leading-snug">
-            {evaluation.commentary}
-          </p>
+          </button>
+          {metaExpanded && (
+            <div className="space-y-3 animate-fade-in">
+              {meta?.justification && (
+                <div className="space-y-1">
+                  <div className="text-[11px] font-medium text-muted-foreground">
+                    Classification Justification
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/50 italic leading-snug">
+                    {meta.justification}
+                  </p>
+                </div>
+              )}
+              {evaluation && (
+                <div className="space-y-1.5">
+                  <div className="text-[11px] font-medium text-muted-foreground">
+                    Response Quality
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <ScorePill label="Verbosity" score={evaluation.verbosity} />
+                    <ScorePill
+                      label="Reading"
+                      score={evaluation.readingLevel}
+                    />
+                    <ScorePill
+                      label="Correctness"
+                      score={evaluation.correctness}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/70 italic leading-snug">
+                    {evaluation.commentary}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,13 +1,15 @@
 # Vercel AI Gateway Demo
 
-A Next.js chatbot that demonstrates the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) with the [AI SDK](https://sdk.vercel.ai). Routes a single prompt through 8 models across 5 providers, streams responses with per-message observability, and compares model outputs side-by-side with AI-powered evaluation.
+A Next.js app that explores **LLM self-evaluation** — can a model judge the quality of other models' responses? Built with the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) and [AI SDK](https://sdk.vercel.ai), it routes the same prompt through 8 models across 5 providers, streams their responses side-by-side, then uses an evaluator model to score each output on verbosity, reading level, and correctness.
+
+The chat responses aren't the feature — the judgment is.
 
 ## Features
 
-- **Multi-provider model routing** — one gateway, 8 models from Amazon, Anthropic, Google, Meta, and OpenAI
-- **Streaming chat** with real-time metadata (time-to-first-token, token counts, estimated cost)
-- **Side-by-side model comparison** — send the same prompt to multiple models in parallel
-- **AI-powered evaluation** — an evaluator model scores responses on verbosity, reading level, and correctness
+- **LLM-as-judge** — after all models respond, an evaluator model anonymizes and scores each output to remove model-name bias
+- **Side-by-side model comparison** — send one prompt to multiple models in parallel, with live-updating stats pinned to each column
+- **Multi-provider gateway** — one gateway, 8 models from Amazon, Anthropic, Google, Meta, and OpenAI
+- **Per-message observability** — real-time metadata streaming (TTFT, token counts, estimated cost, complexity rating)
 - **Server-side guardrails** — profanity filtering and complexity classification before the prompt reaches the model
 - **Leaderboard** — session and global statistics ranked by TTFT, throughput, cost, and complexity breakdown
 
@@ -124,7 +126,7 @@ Prompts are kept inline next to the logic that uses them. Here's where to find e
 ```bash
 npm install
 ```
-v
+
 ### Development
 
 ```bash
